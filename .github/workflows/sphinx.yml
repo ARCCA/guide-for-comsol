@@ -1,0 +1,25 @@
+name: Pages
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v2.3.1
+
+    - name: Prepare
+      run: |
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+    - name: Install and Build
+      run: |
+        python3 -m pip install -r requirements.txt
+        cd docs
+        sphinx-build -M html source build
+
+    - name: Push changes
+      uses: JamesIves/github-pages-deploy-action@4.1.0
+      with:
+        branch: gh-pages
+        folder: docs/build/html
+#
