@@ -1,0 +1,307 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Command Line &#8212; Application Guides and References - COMSOL 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Benchmarks" href="benchmarks.html" />
+    <link rel="prev" title="Cluster computing" href="cluster-computing.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="command-line">
+<h1>Command Line<a class="headerlink" href="#command-line" title="Permalink to this headline">¶</a></h1>
+<p>Guideline notes on how to use COMSOL from the command line.</p>
+<p>The main advantage of running COMSOL simulations from the command line in batch mode
+is the ability to run multiple models at the same time, however, doing so on your
+local machine might not be the best idea as the models would compete for resources
+(RAM, in particular) and therefore might take longer to run simultaneously than they
+would sequentially, or back to back. Fortunately, the Hawk supercomputer helps you
+overcome that problem giving you access to a High Performance Computational system
+with enough resources to solve several types of models even when run at the same time
+(limited only by your licence restrictions).</p>
+<p>The following notes aim to be a short tutorial about how to setup a COMSOL batch
+script to submit a simulation job on Hawk. We assume that you already have a working
+model (mhp file) which you might want to run with different settings.</p>
+<p>For this we will again use the busbar model discussed in the “Cluster computing”
+section of these notes.</p>
+<p>Requirements:</p>
+<ul class="simple">
+<li><p>A COMSOL model (mhp file)</p></li>
+<li><p>Knowledge of your floating network license address (e.g.
+<a class="reference external" href="mailto:comsol_port&#37;&#52;&#48;licence_server">comsol_port<span>&#64;</span>licence_server</a>)</p></li>
+<li><p>Hawk user account. Find more information about how to <a class="reference external" href="https://portal.supercomputing.wales/index.php/getting-access/">create a user account</a>.</p></li>
+<li><p>Hawk project account. Find more information about how to <a class="reference external" href="https://portal.supercomputing.wales/index.php/getting-access/">create a project account</a>.</p></li>
+</ul>
+<p>Desirable:</p>
+<ul class="simple">
+<li><p>Familiarity with general <a class="reference external" href="https://arcca.github.io/An-Introduction-to-Linux-with-Command-Line/">Linux Command Line</a> options.</p></li>
+<li><p>Familiarity with the programming language <a class="reference external" href="https://arcca.github.io/An-Introduction-to-Linux-Shell-Scripting/">Bash</a>.</p></li>
+<li><p>Familiarity with command line text editors.</p></li>
+</ul>
+<section id="writing-a-job-script">
+<h2>Writing a job script<a class="headerlink" href="#writing-a-job-script" title="Permalink to this headline">¶</a></h2>
+<p>Hawk is a shared system with many users in which resources are requested through a
+scheduler software called <em>SLURM</em>. This is done via a <cite>job script</cite>, a text file with
+the commands necessary to specify the resources needed to run a COMSOL simulation.</p>
+<p>We now explain step by step a simple job script to submit a COMSOL job on Hawk. Here
+you can find the <a class="reference download internal" download="" href="_downloads/8aa0b51ef85c4274844421a46527b9db/comsolexample_busbar.q"><code class="xref download docutils literal notranslate"><span class="pre">full</span> <span class="pre">script</span></code></a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1">#SBATCH -J comsolbench_busbar # Job name</span>
+<span class="c1">#SBATCH -o %x.o.%J            # Job output file</span>
+<span class="c1">#SBATCH -e %x.e.%J            # Job error file</span>
+<span class="c1">#SBATCH --ntasks=4            # number of parallel processes (tasks)</span>
+<span class="c1">#SBATCH --ntasks-per-node=4   # number of tasks per node</span>
+<span class="c1">#SBATCH -p compute            # selected queue</span>
+<span class="c1">#SBATCH --time=00:30:00       # time limit</span>
+<span class="c1">#SBATCH --account=scwXXXX     # project account code</span>
+</pre></div>
+</div>
+<p>The first line <code class="docutils literal notranslate"><span class="pre">#!/bin/bash</span></code> tells Linux that this file contains code writted in
+<code class="docutils literal notranslate"><span class="pre">Bash</span></code> and should be executed by the <code class="docutils literal notranslate"><span class="pre">Bash</span></code> interpreter found in the provided
+path. In the <code class="docutils literal notranslate"><span class="pre">Bash</span></code> programming language lines beginning with a <code class="docutils literal notranslate"><span class="pre">#</span></code> symbol are
+treated as comments and ignored. However, this is a job script and is meant to be
+read by the <code class="docutils literal notranslate"><span class="pre">SLURM</span></code> scheduler which scans the file looking for a specific
+combination of characters, <code class="docutils literal notranslate"><span class="pre">#SBATCH</span></code>, and if found, treats the lines containing
+them as directive specifying job requirements. There are several options at your
+disposal to control the behaviour of your jobs, we provide a short summary in the
+<a class="reference external" href="https://portal.supercomputing.wales/index.php/index/slurm/migrating-jobs/">SCW portal</a> and you can find a full list of options in the <a class="reference external" href="https://slurm.schedmd.com/sbatch.html">SLURM website</a>.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span> -eu
+</pre></div>
+</div>
+<p>It is recommended to include the above option in your job script as it enables some
+debugging options to capture some common errors.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>module purge
+module load comsol/all_licences/5.4
+module list
+</pre></div>
+</div>
+<p>Next we load the required software, COMSOL 5.4 in this example. After this we define
+a set of useful variables including the names of our model, input and output files,
+the number of nodes and tasks requested for the job (using SLURM environment
+variables) and the address of your COMSOL’s licence server. In this example we use
+a licence owned by SCW for COMSOL 5.4 and restricted to a single concurrent user. Be
+sure to change this line to point to your licence server if you wish to use specific
+modules included with your licence. If in doubt, contact the licence owner or ARCCA
+and we will do our best to point you in the right direction.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">model</span><span class="o">=</span>busbar
+<span class="nb">export</span> <span class="nv">inputfile</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">model</span><span class="si">}</span><span class="s2">.mph&quot;</span>
+<span class="nb">export</span> <span class="nv">outputfile</span><span class="o">=</span><span class="s2">&quot;outfile.mph&quot;</span>
+<span class="nb">export</span> <span class="nv">nn</span><span class="o">=</span><span class="nv">$SLURM_NNODES</span>
+<span class="nb">export</span> <span class="nv">np</span><span class="o">=</span><span class="nv">$SLURM_NTASKS</span>
+<span class="nb">export</span> <span class="nv">LMCOMSOL_LICENSE_FILE</span><span class="o">=</span><span class="m">1718</span>@licence1.arcca.cf.ac.uk
+</pre></div>
+</div>
+<p>We also set variables pointing to a Working Directory (<code class="docutils literal notranslate"><span class="pre">WDPATH</span></code>) where temporary
+files will be placed during job execution and an Output Directory (<code class="docutils literal notranslate"><span class="pre">ODPATH</span></code>) where
+final files are to be copied. After this we make sure to create <code class="docutils literal notranslate"><span class="pre">WDPATH</span></code> and a
+subdirectory <code class="docutils literal notranslate"><span class="pre">tmp</span></code> required by COMSOL (notice that in this case <code class="docutils literal notranslate"><span class="pre">ODPATH</span></code> is the
+same location from where we submit the job, so there is no need to create it).</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nv">WDPATH</span><span class="o">=</span>/scratch/<span class="nv">$USER</span>/comsolbench_<span class="si">${</span><span class="nv">model</span><span class="si">}</span>/<span class="nv">$SLURM_JOBID</span>
+<span class="nv">ODPATH</span><span class="o">=</span><span class="nv">$SLURM_SUBMIT_DIR</span>/LOGS_<span class="si">${</span><span class="nv">model</span><span class="si">}</span>
+mkdir -p <span class="nv">$WDPATH</span>
+mkdir <span class="nv">$WDPATH</span>/tmp
+</pre></div>
+</div>
+<p>Next we copied the input simulation files and place ourselves in <code class="docutils literal notranslate"><span class="pre">WDPATH</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp <span class="nv">$SLURM_SUBMIT_DIR</span>/input/<span class="nv">$inputfile</span> <span class="nv">$WDPATH</span>
+<span class="nb">cd</span> <span class="nv">$WDPATH</span>
+</pre></div>
+</div>
+<p>Finally we are ready to run comsol from the command line using its batch interface:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>comsol batch <span class="se">\</span>
+    -nn <span class="nv">$nn</span> <span class="se">\</span>
+    -np <span class="nv">$np</span> <span class="se">\</span>
+    -tmpdir <span class="nv">$WDPATH</span>/tmp <span class="se">\</span>
+    -inputfile <span class="nv">$WDPATH</span>/<span class="nv">$inputfile</span> <span class="se">\</span>
+    -outputfile <span class="nv">$WDPATH</span>/<span class="nv">$outputfile</span> <span class="se">\</span>
+    -batchlog <span class="nv">$WDPATH</span>/outputlog.<span class="si">${</span><span class="nv">model</span><span class="si">}</span>.<span class="si">${</span><span class="nv">SLURM_JOBID</span><span class="si">}</span>.log
+</pre></div>
+</div>
+<p>In the above command the final <code class="docutils literal notranslate"><span class="pre">\</span> <span class="pre">``</span> <span class="pre">in</span> <span class="pre">each</span> <span class="pre">line</span> <span class="pre">is</span> <span class="pre">a</span> <span class="pre">way</span> <span class="pre">to</span> <span class="pre">tell</span> <span class="pre">``Bash</span></code> that the
+command continues in the next line and is used in this case to faciliate readability.
+When COMSOL finishes (hopefully without error), we transfer any desired output files
+to our output directory (<code class="docutils literal notranslate"><span class="pre">ODPATH</span></code>), in this case we are only interested in the
+logs.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cp <span class="nv">$WDPATH</span>/*.log <span class="nv">$ODPATH</span>
+</pre></div>
+</div>
+<p>COMSOL has several settings to control its behaviour when used in batch mode. You
+can find a more comprehensive list in COMSOL’s documentation for <a class="reference external" href="https://doc.comsol.com/5.4/doc/com.comsol.help.comsol/comsol_ref_running.29.30.html">version 5.4</a> and for <a class="reference external" href="https://doc.comsol.com/5.5/doc/com.comsol.help.comsol/comsol_ref_running.29.30.html">version 5.5</a>.</p>
+</section>
+<section id="running-a-comsol-job">
+<h2>Running a COMSOL job<a class="headerlink" href="#running-a-comsol-job" title="Permalink to this headline">¶</a></h2>
+<p>With the above job script we can go ahead and submit our first COMSOL job. To do this
+create a new folder in your home directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>~$ mkdir comsol-test
+~$ <span class="nb">cd</span> comsol-test
+~/comsol-test$
+</pre></div>
+</div>
+<p>Copy the job script, you can download it directly using the above link. You can
+download files directly from the internet to Hawk suing the command <code class="docutils literal notranslate"><span class="pre">wget</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>~/comsol-test$ wget comsol-link
+</pre></div>
+</div>
+<p>Create a directory where to save COMSOL simulation files for the <a class="reference external" href="https://uk.comsol.com/model/electrical-heating-in-a-busbar-8484">busbar examples</a>
+for version 5.4:
+.. code-block:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>~/comsol-test$ mkdir input
+~/comsol-test$ cd input
+
+~/comsol-test/input$ wget https://uk.comsol.com/model/download/523001/busbar.mph
+--2021-10-04 18:08:52--  https://uk.comsol.com/model/download/523001/busbar.mph
+Resolving uk.comsol.com (uk.comsol.com)... 176.10.169.228
+Connecting to uk.comsol.com (uk.comsol.com)|176.10.169.228|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 11165080 (11M) [application/vnd.comsol]
+Saving to: ‘busbar.mph’
+
+100%[================================================&gt;] 11,165,080  1.09MB/s   in 9.8s
+
+2021-10-04 18:09:04 (1.09 MB/s) - ‘busbar.mph’ saved [11165080/11165080]
+
+~/comsol-test/input$ wget https://uk.comsol.com/model/download/523031/busbar_box.mph
+--2021-10-04 18:13:45--  https://uk.comsol.com/model/download/523031/busbar_box.mph
+Resolving uk.comsol.com (uk.comsol.com)... 176.10.169.228
+Connecting to uk.comsol.com (uk.comsol.com)|176.10.169.228|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 4427134 (4.2M) [application/vnd.comsol]
+Saving to: ‘busbar_box.mph’
+
+100%[================================================&gt;] 4,427,134   1.70MB/s   in 2.5s
+
+2021-10-04 18:13:48 (1.70 MB/s) - ‘busbar_box.mph’ saved [4427134/4427134]
+
+
+~/comsol-test/input$ wget https://uk.comsol.com/model/download/522971/busbar_geom.mph
+--2021-10-04 18:14:55--  https://uk.comsol.com/model/download/522971/busbar_geom.mph
+Resolving uk.comsol.com (uk.comsol.com)... 176.10.169.228
+Connecting to uk.comsol.com (uk.comsol.com)|176.10.169.228|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 484013 (473K) [application/vnd.comsol]
+Saving to: ‘busbar_geom.mph’
+
+100%[================================================&gt;] 484,013     2.28MB/s   in 0.2s
+
+2021-10-04 18:14:56 (2.28 MB/s) - ‘busbar_geom.mph’ saved [484013/484013]
+</pre></div>
+</div>
+<p>Return to the parent directory <code class="docutils literal notranslate"><span class="pre">comsol-test</span></code> and edit the job script with the text
+editor of your choice to include your project code:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1">#SBATCH -A scwXXXX</span>
+</pre></div>
+</div>
+<p>Back in the command line submit the job using the SLURM command <code class="docutils literal notranslate"><span class="pre">sbatch`</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>~/comsol-test$ sbatch comsolexample_busbar.q
+Submitted batch job 23835110
+</pre></div>
+</div>
+<p>You can check the current status of your job with the SLURM command <code class="docutils literal notranslate"><span class="pre">squeue</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>~/comsol-test$ squeue
+23835110 c_compute comsolbe c.c10458  R      0:24      1 ccs9025
+</pre></div>
+</div>
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Application Guides and References - COMSOL</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="cluster-computing.html">Cluster computing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Command Line</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#writing-a-job-script">Writing a job script</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#running-a-comsol-job">Running a COMSOL job</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Benchmarks</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="cluster-computing.html" title="previous chapter">Cluster computing</a></li>
+      <li>Next: <a href="benchmarks.html" title="next chapter">Benchmarks</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Jose Javier Munoz Criollo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/command-line.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,250 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Cluster computing &#8212; Application Guides and References - COMSOL 0.0.1 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Command Line" href="command-line.html" />
+    <link rel="prev" title="How to use COMSOL on the Hawk supercomputer." href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="cluster-computing">
+<h1>Cluster computing<a class="headerlink" href="#cluster-computing" title="Permalink to this headline">¶</a></h1>
+<p>COMSOL has published a blog post with guidance on how to use its Cluster Computing
+functionality, you can find it <a class="reference external" href="https://uk.comsol.com/blogs/how-to-run-on-clusters-from-the-comsol-desktop-environment/">here</a>. We aim to complement that guide with
+specific notes on how to connect to ARCCA’s HPC cluster <em>Hawk</em> and interact with the
+<em>SLURM</em> job scheduler.</p>
+<p>In these notes we will use the <em>Busbar</em> example (as in COMSOL’s original blog post)
+for version 5.4. You can find the application files <a class="reference external" href="https://uk.comsol.com/model/electrical-heating-in-a-busbar-8484">here</a>. Open COMSOL and load the model files:</p>
+<img alt="_images/comsol-01-load-model.png" src="_images/comsol-01-load-model.png" />
+<p>Once the model is loaded, change <em>Preferences controlled</em> to  <em>User controlled</em> in
+the batch settings sections to allow you to enter Hawk specific details like your
+username and the cluster hostname (later on you can save these settings as default to
+avoid retyping them again unless you wish to change the simulation requirements).</p>
+<img alt="_images/comsol-02-user-controlled-settings.png" src="_images/comsol-02-user-controlled-settings.png" />
+<section id="batch-settings">
+<h2>Batch Settings<a class="headerlink" href="#batch-settings" title="Permalink to this headline">¶</a></h2>
+<p>Now you enter the following Hawk-specific details in the <strong>Batch Settings</strong> section</p>
+<ul class="simple">
+<li><p><strong>Number of nodes</strong>: The number of nodes (physical nodes) to use for this job. If
+not known, we recommend starting with 1 for initial testing and then move to 2 and
+compare performance (e.g. total runtime) to see if there is a real benefit to using
+more than 1 node.</p></li>
+<li><p><strong>Use batch licence</strong>: Check this box to run COMSOL using batch licenses to allow
+running multiple batch jobs for different models that only depend on a parameter.
+Usually you should use the Cluster Sweep node. This option makes it possible to
+submit a single batch job from the COMSOL Desktop and continue working there while
+the cluster job is computing in the background while using only one licence.
+<strong>However, this depends on your local username and your Hawk username matching, if
+this is not the case, two licence seats will be consumed.</strong></p></li>
+<li><p><strong>Scheduler type</strong>: <em>SLURM</em>.</p></li>
+<li><p><strong>User</strong>: Leave empty.</p></li>
+<li><p><strong>Queue name</strong>: There are a few options for this field depending on your model
+specific requirements but we recommend <em>dev</em> for short tests (up to one 1 hr and 2
+nodes), and <em>compute</em> (for simulations likely to require more than 1 hr or more
+than 2 nodes).</p></li>
+<li><p><strong>Directory</strong>: This is where the COMSOL output files will be placed on a local
+computer when the job is finished. This includes intermediate, status, and log
+files. Requires a Windows path (e.g. <em>C:\Users\&lt;YourWindowsUserName&gt;\Desktop\comsol_results</em>).</p></li>
+<li><p><strong>Server directory</strong>: Not required when executing cluster computing from a local
+machine</p></li>
+<li><p><strong>Batch directory</strong>: Where model files, status files, and log files should be kept
+on <em>Hawk</em> during the simulation. We recommed using your scratch directory for
+this as it provides you with a higher storage and file quota (5TB and 3M files
+respectively), however, keep in mind that scratch is meant for temporary storage
+and old or unused files might be removed without warning to free up space in the
+system. Requires a Linux path (e.g. <em>/scratch/YourHawkUserName/comsol-simulations</em>).</p></li>
+<li><p><strong>Installation directory</strong>: The path where COMSOL is installed on <em>Hawk</em>. For
+example <em>/apps/local/physics/comsol/all_licences/5.4/bin</em> for version 5.4.</p></li>
+<li><p><strong>Number of job restarts</strong>: This is the maximum number of times the job can be
+restarted if it fails to complete. We recommend keeping it as 0 (the default) and
+check the logs and error messages to try to find the cause in case the job fails
+to complete.</p></li>
+<li><p><strong>Alive time</strong>: The longest time the process is allowed to run before it must
+inform that it is still running. Failure to do so means that the process is
+considered dead.</p></li>
+</ul>
+<img alt="_images/comsol-03-batch-settings.png" src="_images/comsol-03-batch-settings.png" />
+</section>
+<section id="remote-and-cloud-access">
+<h2>Remote and Cloud Access<a class="headerlink" href="#remote-and-cloud-access" title="Permalink to this headline">¶</a></h2>
+<p>Enter details in the  <strong>Remote and Cloud Access</strong> section. This is where we specify
+how to establish the connection between the local computer and remote cluster. First
+change <em>Preferences controlled</em> to  <em>User controlled</em> in this section to allow you to
+enter Hawk specific details.</p>
+<img alt="_images/comsol-04-remote-access-user-controlled.png" src="_images/comsol-04-remote-access-user-controlled.png" />
+<ul class="simple">
+<li><p><strong>Run Remote</strong>: Check this box to run COMSOL on a remote machine using a remote
+start command such as <em>SSH</em> and using a file transfer program such as <em>SCP</em> to
+transfer the files to and from the remote computer.</p></li>
+<li><p><strong>Remote Invoke Command</strong>: The method for starting COMSOL remotely. Select <em>SSH</em>
+from the dropdown list to enable <em>SSH</em>-specific options.</p>
+<ul>
+<li><p><strong>SSH command</strong>: The program used to run <em>SSH</em> to reach the remote system. In
+this guide we assume that <em>Putty</em> is available in your Windows local machine.</p></li>
+<li><p><strong>SSH directory</strong>: The path to the <em>SSH</em> executable. Click in browse and navigate
+to the right directory (e.g. <em>C:\Program Files (x86)\PuTTY</em>).</p></li>
+<li><p><strong>SSH keyfiles</strong>: The path to your <em>SSH</em> keyfile. This allows COMSOL to identify
+itself in the remote system without you needing to enter your password.</p></li>
+<li><p><strong>SSH username</strong>: Enter your Hawk username.</p></li>
+</ul>
+</li>
+<li><p><strong>File transfer command</strong>: Choose the method for transferring files to the remote
+computer. Select <em>SCP</em> from the dropdown list to enable <em>SPC</em>-specific options.</p>
+<ul>
+<li><p><strong>SCP command</strong>: The program used to run <em>SCP</em> to reach the remote system. In
+this guide we assume that <em>Putty</em> is available in your Windows local machine that
+is also capable of running <em>SCP</em> in addition to <em>SSH</em>.</p></li>
+<li><p><strong>SCP directory</strong>: The path to the <em>SSH</em> executable. Click in browse and navigate
+to the right directory (e.g. <em>C:\Program Files (x86)\PuTTY</em>).</p></li>
+<li><p><strong>SSH keyfiles</strong>: The path to your <em>SSH</em> keyfile. This allows COMSOL to identify
+itself in the remote system without you needing to enter your password.</p></li>
+<li><p><strong>SCP username</strong>: Enter your Hawk username.</p></li>
+</ul>
+</li>
+<li><p><strong>Remote hosts list</strong>: Select <em>Table</em> and click the <em>Add</em> button. A new line will
+be added in table. Enter <em>hawklogin.cf.ac.uk</em> in the new line.</p></li>
+</ul>
+<p>if the hostname should be read from the Remote hosts table
+* <strong>Remote OS</strong>: The Operating System in the remote system. Select <em>Linux</em>.</p>
+<img alt="_images/comsol-05-remote-access-settings.png" src="_images/comsol-05-remote-access-settings.png" />
+</section>
+<section id="save-your-settings">
+<h2>Save your settings<a class="headerlink" href="#save-your-settings" title="Permalink to this headline">¶</a></h2>
+<p>Optionally, you can save these settings to avoid retyping them everytime that you
+wish to submit a job to Hawk from your local computer. Click on the floppy disk icon
+(<em>save as default</em>).</p>
+<img alt="_images/comsol-06-save-settings.png" src="_images/comsol-06-save-settings.png" />
+</section>
+<section id="job-configuration">
+<h2>Job Configuration<a class="headerlink" href="#job-configuration" title="Permalink to this headline">¶</a></h2>
+<p>It is possible to fine tune your COMSOL job to request specific runtimes, memory, or
+environment variables. In Hawk it is necessary to specify your project account code.
+This can be done in the <em>Cluster Computing</em> settings from the <em>Job Configuration</em>
+section.</p>
+<img alt="_images/comsol-07-job-configuration-cluster-computing.png" src="_images/comsol-07-job-configuration-cluster-computing.png" />
+<p>First, expand the <em>General</em> section and choose <em>Cluster Computing</em> in the <em>Defined by study step</em> section to make sure we are using the settings that we defined in
+previous steps</p>
+<img alt="_images/comsol-08-job-configuration-general.png" src="_images/comsol-08-job-configuration-general.png" />
+<p>Next expand the <em>Cluster Settings</em> and modify the following fields:</p>
+<ul>
+<li><p><strong>Memory per node (MB)</strong>: Enter the minimum required. The default is 0, which means
+no limit.</p></li>
+<li><p><strong>Runtime (minutes)</strong>: Enter the Runtime (minutes) before the job is canceled. The
+maxmimum job runtime in Hawk is 72 hours.</p></li>
+<li><p><strong>Additional scheduler arguments</strong>: Use this field to specify your Hawk project
+account code:</p>
+<ul class="simple">
+<li><p><em>–account=scwXXXX</em></p></li>
+</ul>
+<p>and any other scheduler arguments (for example, for mpiexec and environment
+variables).</p>
+</li>
+</ul>
+<img alt="_images/comsol-09-job-configuration-cluster-settings.png" src="_images/comsol-09-job-configuration-cluster-settings.png" />
+</section>
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Application Guides and References - COMSOL</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Cluster computing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#batch-settings">Batch Settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#remote-and-cloud-access">Remote and Cloud Access</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#save-your-settings">Save your settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#job-configuration">Job Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="command-line.html">Command Line</a></li>
+<li class="toctree-l1"><a class="reference internal" href="benchmarks.html">Benchmarks</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">How to use COMSOL on the Hawk supercomputer.</a></li>
+      <li>Next: <a href="command-line.html" title="next chapter">Command Line</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Jose Javier Munoz Criollo.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/cluster-computing.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
